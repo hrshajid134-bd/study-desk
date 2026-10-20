@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StudyDesk – your AI study helper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef2f7; --grid:#d9e1ec; --surface:#ffffff; --ink:#14213d; --muted:#53607a;
+  --line:#c5cfdf; --mark:#ffd23f; --mark-ink:#14213d; --accent:#2b59ff; --accent-ink:#fff; --err:#b3261e;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0e1424;--grid:#1a2338;--surface:#162038;--ink:#eaf0ff;--muted:#a3b0cc;--line:#2d3b5c;--mark:#ffd23f;--mark-ink:#14213d;--accent:#7b9bff;--accent-ink:#0e1424;--err:#ff8a80}
+}
+:root[data-theme="dark"]{--bg:#0e1424;--grid:#1a2338;--surface:#162038;--ink:#eaf0ff;--muted:#a3b0cc;--line:#2d3b5c;--mark:#ffd23f;--mark-ink:#14213d;--accent:#7b9bff;--accent-ink:#0e1424;--err:#ff8a80}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font-family:"Atkinson Hyperlegible",system-ui,sans-serif;font-size:17px;line-height:1.55;color:var(--ink);background-color:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px}
+h1,h2,h3,.brand{font-family:"Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.02em;line-height:1.08;margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+.brand{font-weight:800;font-size:1.4rem}
+.brand span{background:var(--mark);color:var(--mark-ink);padding:0 .25em;border-radius:3px}
+.nav{display:flex;gap:10px;align-items:center}
+.btn{border:2px solid var(--ink);background:var(--surface);border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.6;cursor:wait}
+.hero{display:grid;grid-template-columns:1fr 1.1fr;gap:36px;align-items:start;padding:28px 0 36px}
+@media(max-width:820px){.hero{grid-template-columns:1fr}}
+h1{font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:800}
+.lede{color:var(--muted);max-width:44ch;margin:16px 0 0}
+.points{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:8px}
+.points li{padding-left:22px;position:relative}
+.points li::before{content:"";position:absolute;left:0;top:.55em;width:12px;height:12px;background:var(--mark);border-radius:2px}
+.desk{background:var(--surface);border:2px solid var(--ink);border-radius:14px;box-shadow:6px 6px 0 var(--ink);padding:18px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tab{border:2px solid var(--line);background:transparent;border-radius:999px;padding:5px 14px;cursor:pointer;font-weight:700}
+.tab[aria-pressed="true"]{background:var(--mark);color:var(--mark-ink);border-color:var(--mark)}
+.row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+label{font-weight:700;font-size:.9rem;display:block;margin-bottom:4px}
+textarea,input,select{width:100%;background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:10px 12px}
+textarea{min-height:110px;resize:vertical}
+.row>div{flex:1;min-width:140px}
+.upload{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.fname{color:var(--muted);font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.prev{max-width:100%;max-height:180px;border:2px solid var(--line);border-radius:10px;margin-top:10px}
+.answer{margin-top:14px;border-top:2px dashed var(--line);padding-top:14px;white-space:pre-wrap;word-wrap:break-word}
+.answer:empty{display:none}
+.status{color:var(--muted);font-size:.92rem;margin-top:8px;min-height:1.2em}
+.status.err{color:var(--err)}
+.history{padding:8px 0 56px}
+.history h2{font-size:1.5rem;margin-bottom:12px}
+.item{background:var(--surface);border:2px solid var(--line);border-radius:12px;margin-bottom:10px}
+.item summary{cursor:pointer;padding:12px 16px;font-weight:700}
+.item div{padding:0 16px 14px;white-space:pre-wrap;color:var(--muted)}
+.empty{color:var(--muted)}
+.overlay{position:fixed;inset:0;background:rgba(10,15,30,.6);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:2px solid var(--ink);border-radius:14px;box-shadow:6px 6px 0 var(--ink);padding:22px;width:100%;max-width:400px}
+.modal h2{font-size:1.6rem;margin-bottom:12px}
+.modal .field{margin-bottom:12px}
+.note{color:var(--muted);font-size:.85rem;margin-top:12px}
+.switch{background:none;border:0;padding:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline}
+.err-text{color:var(--err);font-size:.9rem;min-height:1.2em;margin:0 0 8px}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Study<span>Desk</span></div>
+    <div class="nav">
+      <span id="hello" hidden></span>
+      <button class="btn" id="authBtn">Sign in</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <h1>Stuck on homework? Ask StudyDesk.</h1>
+        <p class="lede">Get a clear explanation, a practice quiz, a short summary or a study plan, pitched at your level.</p>
+        <ul class="points">
+          <li>Explains step by step, not just the answer</li>
+          <li>Quizzes you on your own notes</li>
+          <li>Saves your past questions when you sign in</li>
+        </ul>
+      </div>
+
+      <div class="desk">
+        <div class="tabs" role="group" aria-label="What do you need?">
+          <button class="tab" data-mode="explain" aria-pressed="true">Explain it</button>
+          <button class="tab" data-mode="quiz" aria-pressed="false">Quiz me</button>
+          <button class="tab" data-mode="summary" aria-pressed="false">Summarize</button>
+          <button class="tab" data-mode="plan" aria-pressed="false">Study plan</button>
+        </div>
+        <label for="q" id="qLabel">What do you want explained?</label>
+        <textarea id="q" placeholder="e.g. Why does ice float on water?"></textarea>
+        <div class="upload">
+          <input type="file" id="file" accept="image/*" hidden>
+          <button class="btn" id="pick" type="button">Add a photo</button>
+          <span class="fname" id="fname">Homework page, diagram or notes</span>
+          <button class="switch" id="rm" type="button" hidden>Remove</button>
+        </div>
+        <img id="prev" class="prev" alt="Preview of your uploaded photo" hidden>
+        <div class="row">
+          <div>
+            <label for="level">Your level</label>
+            <select id="level">
+              <option>Middle school</option>
+              <option selected>High school</option>
+              <option>University</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button class="btn primary" id="go" style="width:100%">Ask StudyDesk</button>
+          </div>
+        </div>
+        <div class="status" id="status" role="status"></div>
+        <div class="answer" id="answer" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="history" id="historyBox" hidden>
+      <h2>Your past questions</h2>
+      <div id="history"></div>
+    </section>
+  </main>
+</div>
+
+<div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="modal">
+    <h2 id="mTitle">Sign in</h2>
+    <div class="field" id="nameField" hidden>
+      <label for="name">Name</label>
+      <input id="name" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email">
+    </div>
+    <div class="field">
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password">
+    </div>
+    <p class="err-text" id="authErr"></p>
+    <button class="btn primary" id="submitAuth" style="width:100%">Sign in</button>
+    <p class="note" id="switchLine">New here? <button class="switch" id="switchBtn">Create an account</button></p>
+    <p class="note">Accounts live in this browser only. Don’t reuse a password from another site.</p>
+    <p class="note"><button class="switch" id="closeBtn">Close</button></p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var MODES={
+    explain:{label:"What do you want explained?",ph:"e.g. Why does ice float on water?",sys:"Explain the topic step by step in plain language with one simple example. End with one question the student can use to check their understanding."},
+    quiz:{label:"What topic or notes should the quiz cover?",ph:"Paste your notes or name a topic",sys:"Write a 5-question multiple-choice quiz. Number the questions, give options A to D, and put an answer key with one-line explanations at the end."},
+    summary:{label:"What text should be summarized?",ph:"Paste the text you’re studying",sys:"Summarize the text into 5 to 7 short bullet points of the key ideas, then list 3 key terms with one-line definitions."},
+    plan:{label:"What are you studying for, and by when?",ph:"e.g. Biology exam in 2 weeks, weak on genetics",sys:"Create a realistic day-by-day study plan with short sessions, review days and one rest day. Keep it practical."}
+  };
+  var mode="explain", signup=false, img=null;
+  var $=function(id){return document.getElementById(id)};
+
+  function load(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+  function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+  var user=load("sd_user",null);
+
+  function renderUser(){
+    var h=$("hello"),b=$("authBtn");
+    if(user){h.hidden=false;h.textContent="Hi, "+user.name;b.textContent="Sign out";}
+    else{h.hidden=true;b.textContent="Sign in";}
+    renderHistory();
+  }
+  function renderHistory(){
+    var box=$("historyBox");
+    if(!user){box.hidden=true;return}
+    box.hidden=false;
+    var list=load("sd_hist_"+user.email,[]);
+    var el=$("history");el.textContent="";
+    if(!list.length){var p=document.createElement("p");p.className="empty";p.textContent="Nothing yet. Ask your first question above.";el.appendChild(p);return}
+    list.forEach(function(it){
+      var d=document.createElement("details");d.className="item";
+      var s=document.createElement("summary");s.textContent=it.q.slice(0,90);
+      var a=document.createElement("div");a.textContent=it.a;
+      d.appendChild(s);d.appendChild(a);el.appendChild(d);
+    });
+  }
+
+  function openModal(){ $("authErr").textContent="";$("overlay").classList.add("open");setTimeout(function(){(signup?$("name"):$("email")).focus()},0)}
+  function closeModal(){$("overlay").classList.remove("open")}
+  function setSignup(v){
+    signup=v;
+    $("mTitle").textContent=v?"Create account":"Sign in";
+    $("nameField").hidden=!v;
+    $("submitAuth").textContent=v?"Create account":"Sign in";
+    $("switchLine").firstChild.textContent=v?"Have an account? ":"New here? ";
+    $("switchBtn").textContent=v?"Sign in":"Create an account";
+    $("pw").autocomplete=v?"new-password":"current-password";
+  }
+  function accounts(){return load("sd_accounts",{})}
+
+  $("authBtn").onclick=function(){
+    if(user){user=null;save("sd_user",null);$("answer").textContent="";renderUser();}
+    else{setSignup(false);openModal();}
+  };
+  $("switchBtn").onclick=function(){setSignup(!signup);$("authErr").textContent=""};
+  $("closeBtn").onclick=closeModal;
+  $("overlay").addEventListener("click",function(e){if(e.target===this)closeModal()});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")closeModal()});
+
+  // Passwords are never stored in plain text: a salted SHA-256 digest is kept in this browser only.
+  async function digest(email,pw){
+    var data=new TextEncoder().encode("studydesk:"+email+":"+pw);
+    var buf=await crypto.subtle.digest("SHA-256",data);
+    return Array.from(new Uint8Array(buf)).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+  }
+  $("submitAuth").onclick=async function(){
+    var email=$("email").value.trim().toLowerCase(), pw=$("pw").value, name=$("name").value.trim();
+    var err=$("authErr");
+    if(!/^\S+@\S+\.\S+$/.test(email)){err.textContent="Enter a valid email address.";return}
+    if(pw.length<6){err.textContent="Use a password with at least 6 characters.";return}
+    if(signup&&!name){err.textContent="Enter your name.";return}
+    var acc=accounts(), h;
+    try{h=await digest(email,pw)}catch(e){err.textContent="Sign-in isn’t available in this browser.";return}
+    if(signup){
+      if(acc[email]){err.textContent="That email already has an account. Sign in instead.";return}
+      acc[email]={name:name,h:h};save("sd_accounts",acc);
+    }else{
+      if(!acc[email]||acc[email].h!==h){err.textContent="Email or password is wrong. Check both, or create an account.";return}
+      name=acc[email].name;
+    }
+    user={name:name,email:email};save("sd_user",user);
+    $("pw").value="";closeModal();renderUser();
+  };
+
+  document.querySelectorAll(".tab").forEach(function(t){
+    t.onclick=function(){
+      mode=t.dataset.mode;
+      document.querySelectorAll(".tab").forEach(function(x){x.setAttribute("aria-pressed",x===t?"true":"false")});
+      $("qLabel").textContent=MODES[mode].label;$("q").placeholder=MODES[mode].ph;
+    };
+  });
+
+  function status(msg,isErr){var s=$("status");s.textContent=msg||"";s.className="status"+(isErr?" err":"")}
+
+  function clearImg(){
+    if($("prev").src)URL.revokeObjectURL($("prev").src);
+    img=null;$("file").value="";$("prev").hidden=true;$("prev").removeAttribute("src");
+    $("rm").hidden=true;$("fname").textContent="Homework page, diagram or notes";$("pick").textContent="Add a photo";
+  }
+  $("pick").onclick=function(){$("file").click()};
+  $("rm").onclick=clearImg;
+  $("file").onchange=function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    if(!/^image\//.test(f.type)){status("Choose an image file (JPG, PNG, WebP or GIF).",true);clearImg();return}
+    if(f.size>3*1024*1024){status("That photo is over 3 MB. Choose a smaller one or crop it.",true);clearImg();return}
+    clearImg();img=f;status("");
+    $("prev").src=URL.createObjectURL(f);$("prev").hidden=false;
+    $("fname").textContent=f.name;$("rm").hidden=false;$("pick").textContent="Change photo";
+  };
+
+  function toB64(f){return new Promise(function(ok,no){var r=new FileReader();r.onload=function(){ok(String(r.result).split(",")[1])};r.onerror=no;r.readAsDataURL(f)})}
+  $("go").onclick=async function(){
+    if(!user){setSignup(false);openModal();status("Sign in to ask StudyDesk.");return}
+    var q=$("q").value.trim();
+    if(!q&&!img){status("Type your question, paste your notes or add a photo first.",true);return}
+    var btn=$("go");btn.disabled=true;status("Thinking…");$("answer").textContent="";
+    var prompt="You are StudyDesk, a patient tutor for students. Student level: "+$("level").value+". "+MODES[mode].sys+" Use plain text without markdown symbols like ** or #. Be accurate; say so if you’re unsure.\n\n"+(img?"The student attached a photo; read it carefully and use it. ":"")+"\n\nStudent input:\n"+(q||"Use the attached photo.");
+    try{
+      var body={prompt:prompt};
+      if(img){body.image=await toB64(img);body.mime=img.type}
+      var res=await fetch("/api/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(res.status===429)throw {code:"rate_limited"};
+      if(!res.ok)throw new Error("bad");
+      var r=await res.json();
+      var text=r.text||"";
+      $("answer").textContent=text;
+      $("answer").textContent=text;status("");
+      var key="sd_hist_"+user.email, list=load(key,[]);
+      list.unshift({q:q||"(Question from a photo)",a:text});save(key,list.slice(0,20));renderHistory();
+    }catch(e){
+      if(e&&e.code==="rate_limited")status("Too many requests. Wait a minute and try again.",true);
+      else if(e&&e.code==="not_granted")status("Permission to use the AI was declined. Click Ask StudyDesk again and allow it.",true);
+      else status("Something went wrong. Check your connection and try again.",true);
+    }
+    btn.disabled=false;
+  };
+
+  renderUser();
+})();
+</script>
+</body>
+</html>
